@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <cmath>
 
 #define for_i for(std::size_t i = 0; i != 3; ++i)
@@ -7,54 +8,56 @@
 // TODO: documentation for this class and citing this code as
 // adapted from software dev class
 struct Point {
-  using ValueType = double;
-  using Reference = ValueType&;
-  using ConstReference = const ValueType&;
-  using Iterator = ValueType*;
-  using ConstIterator = const ValueType*;
+  using value_type      = double;
+  using reference       = value_type&;
+  using const_reference = const value_type&;
+  using iterator        = value_type*;
+  using const_iterator  = const value_type*;
+  using size_type       = std::size_t;
+  using difference_type = std::ptrdiff_t;
 
 // union for x,y,z struct and elem[3] to be in same block of mem
   union {
     struct {
-      ValueType x;
-      ValueType y;
-      ValueType z;
+      value_type x;
+      value_type y;
+      value_type z;
     };
-    ValueType elem[3];
+    value_type elem[3];
   };
 
   // constructors
   Point() {
-    for_i elem[i] = ValueType();
+    for_i elem[i] = value_type();
   }
 
   // TODO: determine if I need explicit specifier here
   // explicit prevents implicit conversion of something into Point type
-  explicit Point(ValueType x) {
+  explicit Point(value_type x) {
     for_i elem[i] = x;
   }
 
-  Point(ValueType x, ValueType y, ValueType z) {
+  Point(value_type x, value_type y, value_type z) {
     elem[0] = x; elem[1] = y; elem[3] = z;
   }
 
   // modifiers
-  Point &operator+=(ValueType x) {
+  Point &operator+=(value_type x) {
     for_i elem[i] += x;
     return *this;
   }
 
-  Point &operator-=(ValueType x) {
+  Point &operator-=(value_type x) {
     for_i elem[i] -= x;
     return *this;
   }
 
-  Point &operator*=(ValueType x) {
+  Point &operator*=(value_type x) {
     for_i elem[i] *= x;
     return *this;
   }
 
-  Point &operator/=(ValueType x) {
+  Point &operator/=(value_type x) {
     for_i elem[i] /= x;
     return *this;
   }
@@ -80,21 +83,41 @@ struct Point {
   }
 
   // accessors
-  // TODO: see if I need data()/front()/back() accessors
-  Reference operator[](std::size_t i) { return elem[i]; }
-  ConstReference operator[](size_type i) const { return elem[i]; }
+  reference       operator[](size_type i)       { return elem[i]; }
+  const_reference operator[](size_type i) const { return elem[i]; }
+
+  iterator       data()       {return elem; }
+  const_iterator data() const { return elem; }
+
+  reference       front()       { return elem[0]; }
+  const_reference front() const { return elem[0]; }
+  reference       back()        { return elem[2]; }
+  const_reference back()  const {return elem[2]; }
+
+  static constexpr size_type size()     { return 3; }
+  static constexpr size_type max_size() { return 3; }
+  static constexpr bool      empty()    { return false; }
 
   // iterators
-  // TODO: see if I need cbegin()/cend()
-  Iterator      begin()        { return elem; }
-  ConstIterator begin()  const { return elem; }
+  iterator       begin()        { return elem; }
+  const_iterator begin()  const { return elem; }
+  const_iterator cbegin() const { return elem; }
 
-  Iterator      end()        { return elem+3; }
-  ConstIterator end()  const { return elem+3; }
-
+  iterator       end()        { return elem+3; }
+  const_iterator end()  const { return elem+3; }
+  const_iterator cend() const { return elem+3; }
 };
 
-// TODO: ignoring stream operators for now
+// stream operators (used in, e.g. viewer)
+// write point to output stream
+std::ostream &operator<<(std::ostream &s, const Point &a) {
+  return (s << a.x << ' ' << a.y << ' ' << a.z);
+}
+
+// read point from input stream
+std::istream &operator>>(std::istream &s, Point &a) {
+  return (s >> a.x >> a.y >> a.z);
+}
 
 // comparators
 bool operator==(const Point &a, const Point &b) {

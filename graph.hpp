@@ -1,5 +1,9 @@
 #pragma once
 
+// TODO:
+// - find out all the package requirements needed to run these files
+// - eliminate dependency on cme212 files
+
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 
@@ -7,7 +11,9 @@
 #include <set>
 #include <cassert>
 
-#include "CME212/Point.hpp"
+#include "utils/util.hpp"
+// #include "CME212/Point.hpp"
+#include "utils/point.hpp"
 
 template <typename V, typename E>
 class Graph {
@@ -47,7 +53,7 @@ class Graph {
     ~Graph() = default;
 
     // Node class. Proxy for NodeInternal.
-    class Node {
+    class Node : private totally_ordered<Node> {
       public:
 
         // constructor for invalid node
@@ -100,17 +106,21 @@ class Graph {
                   (node_id_ == n.get_node_id());
         }
 
-        // TODO: see if this works
-        bool operator!=(const Node &n) const {
-          return !(*this == n);
-        }
-
         bool operator<(const Node &n) const {
           return node_id_ < n.get_node_id();
         }
 
-        // ID, synonymous with index into NodeVector
+        bool operator>(const Node &n) const {
+          return node_id_ > n.get_node_id();
+        }
+
+        // ID, synonymous with index
         NodeID get_node_id() const {
+          return node_id_;
+        }
+
+        // index, synonymous with ID
+        NodeID index() const {
           return node_id_;
         }
 
@@ -162,6 +172,7 @@ class Graph {
 
       // swap and pop
       std::swap(nodes_[node_id], nodes_[last_node_id]);
+      nodes_.pop_back();
       return 1;
     }
 
@@ -195,7 +206,8 @@ class Graph {
       return Node(id, this);
     }
 
-    class Edge {
+    // Edge class. Proxy for EdgeInternal.
+    class Edge : private totally_ordered<Edge> {
       public:
         // constructor for invalid edge
         Edge() {
@@ -238,10 +250,6 @@ class Graph {
                   (edge_id_ == e.get_edge_id());
         }
 
-        bool operator!=(const Edge &e) const {
-          return !(*this == e);
-        }
-
         bool operator<(const Edge &e) const {
           return (edge_id_ < e.get_edge_id() || graph_ptr_ < e.get_graph_pointer());
         }
@@ -274,13 +282,14 @@ class Graph {
     }
 
     Edge edge(EdgeID id) const {
-      return Edge(id, this);
+      const EdgeInternal &edge = edges_[id];
+      return Edge(id, edge.node1_id, edge.node2_id, this);
     }
 
     std::size_t remove_edge(const Edge &e) {
 
       // case where edge not found
-      if (!has_edge(node(e.node1()), node(e.node2()))) {
+      if (!has_edge(e.node1(), e.node2())) {
         return 0;
       }
 
@@ -299,8 +308,8 @@ class Graph {
       // update the edge ID of the one to be swapped for deleted edge
       if (last_edge_id != edge_id) {
         EdgeInternal &last_edge = edges_[last_edge_id];
-        AdjEdgesSet &adj_edges1 = nodes_[last_edge.node1_id];
-        AdjEdgesSet &adj_edges2 = nodes_[last_edge.node2_id];
+        AdjEdgesSet &adj_edges1 = nodes_[last_edge.node1_id].adjacent_edges;
+        AdjEdgesSet &adj_edges2 = nodes_[last_edge.node2_id].adjacent_edges;
         adj_edges1.erase(last_edge_id);
         adj_edges1.insert(edge_id);
         adj_edges2.erase(last_edge_id);
@@ -308,6 +317,7 @@ class Graph {
       }
 
       std::swap(edges_[edge_id], edges_[last_edge_id]);
+      edges_.pop_back();
       return 1;
     }
 
@@ -430,19 +440,20 @@ class Graph {
         }
 
         IncidentIterator(typename AdjEdgesSet::iterator adj_edges_iterator,
-                          const NodeID node_id, const Graph &graph_ptr)
+                          const NodeID node_id, const Graph *graph_ptr)
           : adj_edges_iterator_(adj_edges_iterator), node_id_(node_id),
             graph_ptr_(const_cast<Graph*>(graph_ptr)) {
         }
 
         Edge operator*() const {
-          const EdgeInternal &edge = (graph_ptr_->edges_)[(*adj_edges_iterator_)];
+          const EdgeID edge_id = *adj_edges_iterator_;
+          const EdgeInternal &edge = (graph_ptr_->edges_)[edge_id];
 
           // manipulate node1 and node2 so that node1 is node_id_
-          if (node_id_ = edge.node1_id) {
-            return Edge(edge.node1_id, edge.node2_id, graph_ptr_);
+          if (node_id_ == edge.node1_id) {
+            return Edge(edge_id, edge.node1_id, edge.node2_id, graph_ptr_);
           } else {
-            return Edge(edge.node2_id, edge.node1_id, graph_ptr_);
+            return Edge(edge_id, edge.node2_id, edge.node1_id, graph_ptr_);
           }
         }
 
@@ -524,6 +535,7 @@ class Graph {
 
   private:
 
+    // true, underlying node
     struct NodeInternal {
       Point position;
       NodeValue node_value;
@@ -533,6 +545,7 @@ class Graph {
       }
     };
 
+    // true, underlying edge
     struct EdgeInternal {
       NodeID node1_id;
       NodeID node2_id;
@@ -542,6 +555,7 @@ class Graph {
       }
     };
 
+    // underlying data structures storing graph information
     NodeVector nodes_;
     EdgeVector edges_;
 
