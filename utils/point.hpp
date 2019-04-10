@@ -13,7 +13,7 @@ struct Point {
   using Iterator = ValueType*;
   using ConstIterator = const ValueType*;
 
-  // TODO: see if I even need union
+// union for x,y,z struct and elem[3] to be in same block of mem
   union {
     struct {
       ValueType x;
