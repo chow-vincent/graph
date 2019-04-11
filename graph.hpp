@@ -1,8 +1,7 @@
 #pragma once
 
 // TODO:
-// - find out all the package requirements needed to run these files
-// - eliminate dependency on cme212 files
+// - add comments, documentation for class and functions
 
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
@@ -12,13 +11,11 @@
 #include <cassert>
 
 #include "utils/util.hpp"
-// #include "CME212/Point.hpp"
 #include "utils/point.hpp"
 
 template <typename V, typename E>
 class Graph {
   private:
-
     // forward declarations of underlying data
     struct NodeInternal;
     struct EdgeInternal;
@@ -52,7 +49,9 @@ class Graph {
     // default destructor
     ~Graph() = default;
 
-    // Node class. Proxy for NodeInternal.
+    /** @class Graph::Node
+     *  @brief Represents graph's nodes. Proxy for NodeInternal.
+     */
     class Node : private totally_ordered<Node> {
       public:
 
@@ -62,6 +61,7 @@ class Graph {
           graph_ptr_ = nullptr;
         }
 
+        // construct valid node, assumes 0 <= node_id < num_nodes()
         Node(NodeID node_id, const Graph *graph_ptr)
           : node_id_(node_id), graph_ptr_(const_cast<Graph*>(graph_ptr)) {
         }
@@ -85,6 +85,7 @@ class Graph {
           return (graph_ptr_->nodes_)[node_id_].node_value;
         }
 
+        // number of edges connected to this node
         std::size_t degree() const {
           const auto &adj_edges = (graph_ptr_->nodes_)[node_id_].adjacent_edges;
           return adj_edges.size();
@@ -147,11 +148,24 @@ class Graph {
       return size();
     }
 
+    /** Add node to graph, returning the added node.
+     *  @param[in] position new node's position in 3D space
+     *  @post      new num_nodes() == old num_nodes() + 1
+     */
     Node add_node(const Point &position, const NodeValue &node_value = NodeValue()) {
       nodes_.emplace_back(position, node_value);
       return Node(nodes_.size() - 1, this);
     }
 
+    /** Remove node from graph. Note that the node is permanently
+     *  removed from the underlying graph data structures.
+     *
+     *  @param[in] n The Node to be removed.
+     *  @result    Return 0 if no node found. Return 1 if node found and removed.
+     *
+     *  @post      If no node found, new num_nodes() == old num_nodes().
+     *             If node found, new num_nodes() == old num_nodes() - 1.
+     */
     std::size_t remove_node(const Node &n) {
 
       // case where node not found
@@ -170,9 +184,10 @@ class Graph {
 
       update_adjacent_edges(nodes_.back().adjacent_edges, node_id, last_node_id);
 
-      // swap and pop
+      // swap and pop (swap unwanted node with last one, and pop it off)
       std::swap(nodes_[node_id], nodes_[last_node_id]);
       nodes_.pop_back();
+
       return 1;
     }
 
@@ -193,20 +208,23 @@ class Graph {
       }
     }
 
-    // TODO?:
-    // NodeIterator remove_node(NodeIterator n_it) {
-    // }
-
+    // determine if Node belongs to this Graph
     bool has_node(const Node &n) const {
       return n.get_node_id() < nodes_.size() && n.get_graph_pointer() == this;
     }
 
-    // precondition that id in range
+    /** Return node with ID @a id.
+     *  @pre 0 <= @a id < num_nodes()
+     */
     Node node(NodeID id) const {
       return Node(id, this);
     }
 
-    // Edge class. Proxy for EdgeInternal.
+    /** @class Graph::Edge
+     *
+     *  @brief Represents graph's edges. Proxy for EdgeInternal.
+     *         Nodes defining edge are order-insensitive.
+     */
     class Edge : private totally_ordered<Edge> {
       public:
         // constructor for invalid edge
@@ -245,6 +263,7 @@ class Graph {
           return norm_2(pos1 - pos2);
         }
 
+        // comparators
         bool operator==(const Edge &e) const {
           return (graph_ptr_ == e.get_graph_pointer()) &&
                   (edge_id_ == e.get_edge_id());
@@ -281,11 +300,23 @@ class Graph {
       return edges_.size();
     }
 
+    /** Return edge with ID @a i.
+     *  @pre 0 <= @a id < num_edges()
+     */
     Edge edge(EdgeID id) const {
       const EdgeInternal &edge = edges_[id];
       return Edge(id, edge.node1_id, edge.node2_id, this);
     }
 
+    /** Remove edge from graph. Note that the edge is permanently
+     *  removed from the underlying graph data structures.
+     *
+     *  @param[in] e The Edge to be removed.
+     *  @result    Return 0 if no edge found. Return 1 if edge found and removed.
+     *
+     *  @post      If no edge found, new num_edges() == old num_edges().
+     *             If edge found, new num_edges() == old num_edges() - 1.
+     */
     std::size_t remove_edge(const Edge &e) {
 
       // case where edge not found
@@ -318,6 +349,7 @@ class Graph {
 
       std::swap(edges_[edge_id], edges_[last_edge_id]);
       edges_.pop_back();
+
       return 1;
     }
 
@@ -326,10 +358,7 @@ class Graph {
       return remove_edge(edge);
     }
 
-    // TODO?:
-    // EdgeIterator remove_edge(EdgeIterator e_it) {
-    // }
-
+    // test whether two nodes are connected by an edge
     bool has_edge(const Node &a, const Node &b) const {
       Edge edge = find_connecting_edge(a, b);
       return edge.get_graph_pointer(); // nullptr if edge invalid
@@ -360,6 +389,12 @@ class Graph {
       return Edge(); // invalid if could not find
     }
 
+    /** Add an edge to the graph, or return the current edge if it already exists.
+     * @return an Edge object e with e.node1() == @a a and e.node2() == @a b
+     * @post has_edge(@a a, @a b) == true
+     * @post If old has_edge(@a a, @a b) == true, new num_edges() == old num_edges().
+     *       else,                                new num_edges() == old num_edges() + 1.
+     */
     Edge add_edge(const Node& a, const Node& b, const EdgeValue &edge_value = EdgeValue()) {
       Edge edge = find_connecting_edge(a, b);
 
@@ -384,6 +419,7 @@ class Graph {
       return Edge(new_edge_id, id_a, id_b, this);
     }
 
+    // remove all nodes and edges from this graph
     void clear() {
       nodes_.clear();
       edges_.clear();
@@ -401,7 +437,9 @@ class Graph {
       }
     };
 
-    // class for iterating over graph's nodes
+    /** @class Graph::NodeIterator
+     *  @brief class for iterating over graph's nodes
+     */
     class NodeIterator : public thrust::transform_iterator<GetNode, thrust::counting_iterator<NodeID>, Node> {
       public:
         using super_t = thrust::transform_iterator<GetNode, thrust::counting_iterator<NodeID>, Node>;
@@ -426,6 +464,9 @@ class Graph {
       return NodeIterator(thrust::counting_iterator<NodeID>(num_nodes()), this);
     }
 
+    /** @class Graph::IncidentIterator
+     *  @brief Class for iterating over a node's adjacent edges
+     */
     class IncidentIterator {
       public:
         // aliases to use STL iterator_traits
@@ -508,7 +549,9 @@ class Graph {
       }
     };
 
-    // class for iterating over graph's edges
+    /** @class Graph::EdgeIterator
+     *  @brief Class for iterating over the graph's edges.
+     */
     class EdgeIterator : public thrust::transform_iterator<GetEdge, thrust::counting_iterator<EdgeID>, Edge> {
       public:
         using super_t = thrust::transform_iterator<GetEdge, thrust::counting_iterator<EdgeID>, Edge>;
