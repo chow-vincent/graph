@@ -44,11 +44,13 @@ int main(int argc, char** argv)
         graph.add_edge(nodes[t[i]], nodes[t[j]]);
 
   // print num of nodes and edges
-  std::cout << graph.num_nodes() << " " << graph.num_edges() << std::endl;
+  std::cout << "# Nodes: " << graph.num_nodes() << std::endl;
+  std::cout << "# Edges: " << graph.num_edges() << std::endl;
 
   // launch viewer
   GraphUtil::SFML_Viewer viewer;
 
+  // load graph into the viewer
   auto node_map = viewer.empty_node_map(graph);
   viewer.add_nodes(graph.node_begin(), graph.node_end(), node_map);
   viewer.add_edges(graph.edge_begin(), graph.edge_end(), node_map);

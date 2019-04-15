@@ -28,7 +28,7 @@ DEPSFLAGS = -MD -MF $(DEPSFILE)
 
 # Define any directories containing header files
 #   To include directories use -Ipath/to/files
-INCLUDES += -I/home/vincent/software/mtl4 -I/home/vincent/software/thrust
+INCLUDES += -I/home/vincent/software/thrust
 
 # Define cxx compile flags
 CXXFLAGS  := -std=c++11 -fopenmp -g -O0 -W -Wall -Wextra
@@ -46,11 +46,6 @@ endif
 ifeq ($(kernel-name), Darwin)
   LDLIBS += -lsfml-graphics -lsfml-window -lsfml-system -framework OpenGL
 endif
-
-######################
-## Makefile Options ##
-######################
-
 
 ####################
 ## Makefile Rules ##

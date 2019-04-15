@@ -1,8 +1,5 @@
 #pragma once
 
-// TODO:
-// - add comments, documentation for class and functions
-
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 
@@ -13,6 +10,10 @@
 #include "utils/util.hpp"
 #include "utils/point.hpp"
 
+/** @class Graph
+ *  @brief General undirected, graph class consisting of Nodes and Edges.
+ *         Implemented as an adjacency list.
+ */
 template <typename V, typename E>
 class Graph {
   private:
@@ -182,7 +183,8 @@ class Graph {
         remove_edge(edge(edge_id));
       }
 
-      update_adjacent_edges(nodes_.back().adjacent_edges, node_id, last_node_id);
+      // update ID of node swapped in for the deleted one
+      update_adjacent_edges(node_id, last_node_id);
 
       // swap and pop (swap unwanted node with last one, and pop it off)
       std::swap(nodes_[node_id], nodes_[last_node_id]);
@@ -192,12 +194,13 @@ class Graph {
     }
 
     // helper to update the ID of the node swapped in for the deleted one
-    void update_adjacent_edges(AdjEdgesSet &adj_edges, const NodeID node_id, const NodeID last_node_id) {
-      // if we are removing last node, do nothing
+    void update_adjacent_edges(const NodeID node_id, const NodeID last_node_id) {
+      // if removing last node, do nothing
       if (node_id == last_node_id) {
         return;
       }
 
+      const AdjEdgesSet &adj_edges = nodes_.back().adjacent_edges;
       for (auto it = adj_edges.begin(); it != adj_edges.end(); ++it) {
         EdgeInternal &edge = edges_[*it];
         if (edge.node1_id == last_node_id) {
@@ -338,7 +341,7 @@ class Graph {
 
       // update the edge ID of the one to be swapped for deleted edge
       if (last_edge_id != edge_id) {
-        EdgeInternal &last_edge = edges_[last_edge_id];
+        const EdgeInternal &last_edge = edges_[last_edge_id];
         AdjEdgesSet &adj_edges1 = nodes_[last_edge.node1_id].adjacent_edges;
         AdjEdgesSet &adj_edges2 = nodes_[last_edge.node2_id].adjacent_edges;
         adj_edges1.erase(last_edge_id);
@@ -601,5 +604,4 @@ class Graph {
     // underlying data structures storing graph information
     NodeVector nodes_;
     EdgeVector edges_;
-
 };

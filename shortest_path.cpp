@@ -1,5 +1,5 @@
 /**
- * Visualize shortest paths on a graph.
+ * Visualize shortest paths on a graph using heatmaps.
  */
 
 #include <vector>
@@ -21,8 +21,7 @@ using NodeIter  = typename GraphType::NodeIterator;
 
 // functor comparing node positions relative to reference point (used in nearest_node)
 struct CompareNodePositions {
-  CompareNodePositions(const Point &point) : point_(point) {
-  }
+  Point point_;
 
   bool operator()(const NodeType &node_a, const NodeType &node_b) {
     double dist_a = norm_2(point_ - node_a.position());
@@ -30,16 +29,16 @@ struct CompareNodePositions {
     return dist_a < dist_b;
   }
 
-  Point point_;
+  CompareNodePositions(const Point &point) : point_(point) {
+  }
 };
 
-// nearest node to a specified point
+// find nearest node to a specified point
 NodeIter nearest_node(const GraphType& g, const Point& point) {
   return std::min_element(g.node_begin(), g.node_end(), CompareNodePositions(point));
 }
 
- // update graph with shortest path lengths from a root node
- // uses Breadth-First Search algorithm
+ // update graph with shortest path lengths from a root node (Breadth-First Search)
 int shortest_path_lengths(GraphType& g, NodeType& root)
 {
   // initialize all nodes to -1
@@ -48,11 +47,10 @@ int shortest_path_lengths(GraphType& g, NodeType& root)
   }
   root.value() = 0; // set root node to 0
 
-  int max_dist = 0; // keeping track of max dist
+  int max_dist = 0; // keeping track of max dist from the root
   std::queue<NodeType> q;
   q.push(root);
 
-  // BFS
   while (!q.empty()) {
     NodeType node = q.front();
     q.pop(); // pop off top of queue
@@ -71,7 +69,7 @@ int shortest_path_lengths(GraphType& g, NodeType& root)
       }
 
       // update neighbor value
-      neighbor_value = node_value + 1; // cost of traversing edge constant
+      neighbor_value = node_value + 1; // constant cost of traversing edge
       q.push(neighbor);
 
       // keep track of farthest distance seen
@@ -86,8 +84,8 @@ int shortest_path_lengths(GraphType& g, NodeType& root)
 
 // functor for generating heat map on graph
 struct ColorFunctor {
-
   int max_value {};
+
   GraphUtil::Color operator()(const NodeType &node) {
     int node_value = node.value();
     return GraphUtil::Color::make_heat(node_value/(float)max_value);
@@ -128,16 +126,18 @@ int main(int argc, char** argv)
         graph.add_edge(nodes[t[i]], nodes[t[j]]);
 
   // print num of nodes and edges
-  std::cout << graph.num_nodes() << " " << graph.num_edges() << std::endl;
+  std::cout << "# Nodes: " << graph.num_nodes() << std::endl;
+  std::cout << "# Edges: " << graph.num_edges() << std::endl;
 
   // launch viewer
   GraphUtil::SFML_Viewer viewer;
 
+  // setup coloring of paths by length
   NodeIter node_iter = nearest_node(graph, Point(0.0, 0.0, 0.0));
   NodeType root = *node_iter;
-
   int max_length = shortest_path_lengths(graph, root);
 
+  // load graph into viewer
   auto node_map = viewer.empty_node_map(graph);
   viewer.add_nodes(graph.node_begin(), graph.node_end(), ColorFunctor(max_length), node_map);
   viewer.add_edges(graph.edge_begin(), graph.edge_end(), node_map);
